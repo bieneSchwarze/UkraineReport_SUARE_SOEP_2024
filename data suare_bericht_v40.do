@@ -6,7 +6,7 @@ global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddaten
 
 global in_Stichprobendaten"\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddatenlieferung_REF_7709_20240227\Stichprobendaten"
 
-global AVZ "I:/MA/pcumming/suare"
+global AVZ ""
 global do "$AVZ/do/"
 global out_log "$AVZ/log"
 global out_data "$AVZ/output/"
@@ -18,7 +18,7 @@ use $in\Stichprobendaten\soep-core-2023-hbrutto.dta, clear
 	count
 	rename sample1 samplehh
 
-merge 1:m hid cid syear using$in\Stichprobendaten\soep-core-2023-hhmatrix.dta
+merge 1:m hid cid syear using $in\Stichprobendaten\soep-core-2023-hhmatrix.dta
 	keep if _merge==3
 	drop _merge
 	rename staat staat_hhmatrix 
@@ -66,8 +66,7 @@ tab lr3130 			// 3403 Fälle
 tab lr3131 if lr3130==2022
 tab lr3131 if lr3130==2023
 
-save $out_data/suare_bericht_v40.dta, replace 
-
+save $out_data/suare_bericht_v40_data.dta, replace 
 
 /* --------------------------------- 
     merge with $instrumentation
@@ -83,7 +82,7 @@ merge 1:1 pid syear using $out_data/suare_instr.dta
 	tab syear iyear
 	tab instrument
 	
-save $out_data/suare_bericht_v40.dta, replace 
+save $out_data/suare_bericht_v40_data.dta, replace 
 
 /* ----------
     weights
@@ -138,8 +137,8 @@ foreach var of varlist `nostring' {
 	.g "Question not part of the survey program this year" , replace
 	label values `var' miss_lab`numlist++'
 }
-  
-	save "${dataout}/SOEP_v40.dta", replace 
+
+save $out_data/suare_bericht_v40_data.dta, replace 
 
 *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
 

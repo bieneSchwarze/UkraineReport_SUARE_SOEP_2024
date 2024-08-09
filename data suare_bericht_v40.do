@@ -15,10 +15,10 @@ global out_temp "$AVZ/temp/"
  * log using $out_log/data_suare_v40.log, text replace
 	
 use $in\Stichprobendaten\soep-core-2023-hbrutto.dta, clear
-	count
-	rename sample1 samplehh
+ count
+ rename sample1 samplehh
 
-merge 1:m hid cid syear using $in\Stichprobendaten\soep-core-2023-hhmatrix.dta
+merge 1:m hid cid syear using$in\Stichprobendaten\soep-core-2023-hhmatrix.dta
 	keep if _merge==3
 	drop _merge
 	rename staat staat_hhmatrix 
@@ -55,24 +55,25 @@ codebook pid	//  unique 6,499
   
 tab prev_stichprobe
 keep if prev_stichprobe==1
-fre sample1
-fre samplehh
+fre sample1 samplehh
 
-codebook pid		 // double, 3438 unique
+codebook pid	// double, 3438 unique
 
 tab lr3130 						
 drop if lr3130<2022				 
-tab lr3130 			// 3403 Fälle 
-tab lr3131 if lr3130==2022
-tab lr3131 if lr3130==2023
+tab lr3130 		// 3403 Fälle 
+ /* tab lr3131 if lr3130==2022
+tab lr3131 if lr3130==2023 */
 
-save $out_data/suare_bericht_v40_data.dta, replace 
+ * save $out_data/suare_bericht_v40_data.dta, replace 
 
-/* --------------------------------- 
+/* -------------------------------
     merge with $instrumentation
-  ---------------------------------- */
+  -------------------------------- */
 
 rename instrument instrument_p_ref
+desc instrument_p_ref
+label values instrument
 
 merge 1:1 pid syear using $out_data/suare_instr.dta
 	keep if _merge==3
@@ -92,6 +93,9 @@ merge 1:1 pid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabg
 	drop _merge
 	isid pid syear
 	codebook pid
+
+save $out_data/suare_bericht_v40_data.dta, replace 
+
 	
 /* ----------------------------
     Recoding of missing values
@@ -137,8 +141,8 @@ foreach var of varlist `nostring' {
 	.g "Question not part of the survey program this year" , replace
 	label values `var' miss_lab`numlist++'
 }
-
-save $out_data/suare_bericht_v40_data.dta, replace 
+  
+	save "${dataout}/SOEP_v40.dta", replace 
 
 *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
 

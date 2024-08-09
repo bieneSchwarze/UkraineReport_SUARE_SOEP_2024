@@ -4,8 +4,6 @@ capture log close
 
 global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddatenlieferung_REF_7709_20240227"
 
-global in_Stichprobendaten"\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddatenlieferung_REF_7709_20240227\Stichprobendaten"
-
 global AVZ ""
 global do "$AVZ/do/"
 global out_log "$AVZ/log"
@@ -18,7 +16,7 @@ use $in\Stichprobendaten\soep-core-2023-hbrutto.dta, clear
  count
  rename sample1 samplehh
 
-merge 1:m hid cid syear using$in\Stichprobendaten\soep-core-2023-hhmatrix.dta
+merge 1:m hid cid syear using $in\Stichprobendaten\soep-core-2023-hhmatrix.dta
 	keep if _merge==3
 	drop _merge
 	rename staat staat_hhmatrix 
@@ -57,7 +55,7 @@ tab prev_stichprobe
 keep if prev_stichprobe==1
 fre sample1 samplehh
 
-codebook pid	// double, 3438 unique
+codebook pid		// double, 3438 unique
 
 tab lr3130 						
 drop if lr3130<2022				 
@@ -76,12 +74,12 @@ desc instrument_p_ref
 label values instrument
 
 merge 1:1 pid syear using $out_data/suare_instr.dta
-	keep if _merge==3
-	drop _merge
-	isid pid syear
-	codebook pid
-	tab syear iyear
-	tab instrument
+ keep if _merge==3
+ drop _merge
+ isid pid syear
+ codebook pid
+ tab syear iyear
+ tab instrument
 	
 save $out_data/suare_bericht_v40_data.dta, replace 
 

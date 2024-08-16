@@ -16,7 +16,6 @@ use $out_data/suare_bericht_v40_data.dta, clear
 
  * ----- CHILDREN IN HOUSEHOLD -----
 
-
  * ----- Children (dummy) -----
 
 gen children = lr3192
@@ -53,6 +52,21 @@ replace hchild_N = 0 if h_child_hh == 0
 label var hchild_N "Anzahl der Kinder im Haushalt" 
 
 tab prev_nrkid hchild_N, m
+
+ * ----- children born in Germany -----
+
+gen child_in_G = 0
+
+foreach var of varlist prev_k_birthy* {
+    replace child_in_G = 1 if inlist(`var', 2022, 2023) & `var' >= lr3130
+}
+
+tab child_in_G
+
+duplicates report pid if child_in_G > 1
+
+sort pid
+ * browse pid prev_k_birthy* if prev_k_birthy_v2_1 > 2021 | prev_k_birthy_v2_2 > 2021 | prev_k_birthy_v2_3 > 2021 | prev_k_birthy_v2_4 > 2021 | prev_k_birthy_v2_5 > 2021 | prev_k_birthy_v2_6 > 2021 | prev_k_birthy_v2_7 > 2021 | prev_k_birthy_v2_8 > 2021 | prev_k_birthy_v2_9 > 2021 | prev_k_birthy_v2_10 > 2021
 
  * ----- Youngest child: age group -----
 

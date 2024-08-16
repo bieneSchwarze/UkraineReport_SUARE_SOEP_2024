@@ -111,7 +111,7 @@ http://about.paneldata.org/soep/dtc/data-structure.html
 
  --------------------------------------------------------- */
 
- * Identifying string variables:
+ * identifying string variables:
    
 foreach var of varlist _all {
     capture confirm numeric variable `var'
@@ -120,31 +120,42 @@ foreach var of varlist _all {
     }
 }
 
+ * define, label missing values
+label define miss_lab .a "No information / Don't know" .b "Does not apply" ///
+.c "Implausible value" .d "Inadmissable multiple response" /// 
+.e "Not included in this version of the questionnaire" ///
+.f "Version of questionnaire with modified filtering" ///
+.g "Question not part of the survey program this year" , replace
+
+ * non-string variables
 qui ds, not(type string)
 local nostring = "`r(varlist)'"
 
-foreach var of varlist _all {
-    capture confirm numeric variable `var'
-    if !_rc {
-* Define / label missings:
-
-local numlist = 1
 foreach var of varlist `nostring' {
-	qui mvdecode `var', mv(-1 = .a \ -2 = .b \ -3 = .c \ -4 = .d \ -5 = .e \ -6 = .f \ -8 = .g)
-	label define miss_lab`numlist' ///
-	.a "No information / Don't know" .b "Does not apply" ///
-	.c "Implausible value" .d "Inadmissable multiple response" /// 
-	.e "Not included in this version of the questionnaire" ///
-	.f "Version of questionnaire with modified filtering" ///
-	.g "Question not part of the survey program this year" , replace
-	label values `var' miss_lab`numlist++'
-}
-  
-	save "${dataout}/SOEP_v40.dta", replace 
+  capture confirm numeric variable `var'
+    if !_rc {
+	local labelname : value label `var'      
+	qui gen `var'_temp = `var'
+    * decode missing values 
+	qui recode `var'_temp (-1 = .a) (-2 = .b) (-3 = .c) (-4 = .d) (-5 = .e) (-6 = .f) (-8 = .g)
+        
+    label values `var'_temp miss_lab
+        
+    * replace missing values 
+	foreach mv of numlist .a .b .c .d .e .f .g {
+    	qui replace `var' = `mv' if `var'_temp == `mv'
+        }
+        
+    label values `var' `labelname'
+        
+    drop `var'_temp
+    }
+}	
 
-*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
+save $out_data/suare_bericht_v40_data.dta, replace 
 
-	
+ *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
+
 clear
 exit	
 	

@@ -64,7 +64,7 @@ use $out_data\suare_bericht_v40_data.dta, clear
 codebook hid pid //n(hid)= 2,219; n(pid)= 3,403
 
 
-* generating basi socio-demographic variables
+* generating basic socio-demographic variables
 	* age
 
 gen age = syear-geburt	
@@ -120,7 +120,7 @@ lab var n_pid_HH "Total number of persons in household"
 ------------+-----------------------------------
       Total |      1,812      100.00          */
 	
-	* how many unique hids and pids are in dataset cosnidering the total numebr of
+	* how many unique hids and pids are in dataset considering the total number of persons in HH? 
 bys n_pid_HH: distinct hid pid
 
 /* -> n_pid_HH = 1
@@ -129,7 +129,7 @@ bys n_pid_HH: distinct hid pid
        |      total   distinct
 -------+----------------------
    hid |        539        539
-   pid |        539        539        "allein Erzihehnd"
+   pid |        539        539        "single parent (alleinerziehend)"
 
 -----------------------------------------
 -> n_pid_HH = 2

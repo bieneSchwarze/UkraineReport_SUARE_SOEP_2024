@@ -53,6 +53,13 @@ label var hchild_N "Anzahl der Kinder im Haushalt"
 
 tab prev_nrkid hchild_N, m
 
+ * ----- children age -----
+
+forvalues i = 1/10 {
+    gen age_k_`i' = 2023 - prev_k_birthy_v2_`i'
+}
+tab1 age_k*
+
  * ----- children born in Germany -----
 
 gen child_in_G = 0
@@ -70,30 +77,13 @@ sort pid
 
  * ----- Youngest child: age group -----
 
-gen help1 = prev_k_birthy_v2_1
-gen help2 = prev_k_birthy_v2_2
-gen help3 = prev_k_birthy_v2_3
-gen help4 = prev_k_birthy_v2_4
-gen help5 = prev_k_birthy_v2_5
-gen help6 = prev_k_birthy_v2_6
-gen help7 = prev_k_birthy_v2_7
-gen help8 = prev_k_birthy_v2_8
-gen help9 = prev_k_birthy_v2_9
-gen help10 = prev_k_birthy_v2_10
-
-foreach var of varlist help* {
+foreach var of varlist age_k* {
 	replace `var' = . if `var'<0
 }
 
-foreach var of varlist help* {
-	replace `var' = (2023 - `var')
-}
-
-egen youngest_child = rowmin(help*) 
+egen youngest_child = rowmin(age_k*) 
 sort pid
-br pid youngest_child help*
-
-drop help* 
+br pid youngest_child age_k*
 
 gen h_child_age=.
 recode h_child_age .=1 if h_child_hh == 0

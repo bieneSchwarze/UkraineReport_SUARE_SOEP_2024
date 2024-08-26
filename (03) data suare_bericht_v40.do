@@ -21,7 +21,7 @@ merge 1:m hid cid syear using $in\Stichprobendaten\soep-core-2023-hhmatrix.dta
 	drop _merge
 	rename staat staat_hhmatrix 
 
-merge 1:1 pid hid syear using $in\Befragungsdaten\Netto_geprueft\soep-core-2023-p-ref.dta
+merge 1:1 pid hid syear using $out_data\p-ref_non-missing
 	keep if _merge==3
 	drop _merge
 	isid pid syear

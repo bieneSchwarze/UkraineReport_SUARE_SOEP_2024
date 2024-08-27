@@ -1,0 +1,415 @@
+---
+title: "SUARE Bericht_v40 Bildung"
+output: html_document
+date: "2024-08-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1. Pre-work
+
+Load packages
+
+```{r}
+library(pacman)
+
+pacman::p_load(tidyverse,
+               haven, #read .dta dta
+               naniar,
+               
+               sjmisc, # search for variable labels in dataset
+               sjPlot) #print frq tables
+
+
+```
+
+
+## 1.1. Sample and Data cleaning
+
+```{r}
+data_v40 <- read_dta("") # forer version of data-file
+
+```
+
+
+```{r}
+# Exploring: How many unique HH and pids are in the dataset?
+
+data_v40 |>
+  summarise(n_distinct(hid),
+            n_distinct(pid)) # 2219 hids and 3403 pids
+
+
+# generate basic socio-demographic variabes
+data_v40 <- data_v40 |>
+  mutate(age = syear - geburt, # age
+         sex_bin = case_when( # gender (binary)
+           sex == 1 ~ 0, # male
+           sex == 2 ~ 1, # female
+           TRUE ~ NA
+         )) |>
+  set_variable_labels(sex_bin = "Gender") |>
+  set_value_labels(sex_bin = c("male" = 0, "female" = 1))
+  
+
+# exploring: variables in dataset indicating if pids and hids have/dont have children and how many
+data_v40 |>
+  frq(lr3192) # [Children] yes= 2,590; no= 792; missings= 21
+
+data_v40 |>
+  frq(lb0285) # 1-more = 2,579; missings = 824
+
+data_v40 |>
+  frq(prev_hlk0044_v2) # [Children (<16 y.o.) in HH] yes= 1,812; no= 1,591
+
+data_v40 |>
+  frq(prev_nrkid) # [how many children (<16) in HH] 0=1,591, 1-more=1,812
+
+
+# isolating only his/pids with children (<16) in HH
+data_v40 <- data_v40 |>
+  filter(prev_hlk0044_v2 == 1)
+
+
+# how many unique pids/hids are in the dataset (having children < 16 in HH)
+data_v40 |>
+  summarise(n_distinct(hid), # 1812
+            n_distinct(pid)) # 1122 
+
+
+# how many persons are in HHs, considering only HH with children <16
+## Generate variable that counts how many pid by hid are present
+data_v40 <- data_v40 |>
+  group_by(hid) |>
+  mutate(n_pid_HH = n()) |>
+  ungroup()
+
+## Frequency table of the n_pid_HH variable
+data_v40 |>
+  frq(n_pid_HH)
+
+## set variable label: 
+data_v40 <- data_v40 |>
+  set_variable_labels(n_pid_HH = "Total number of persons in household")
+
+
+# how many unique hids and pids are in dataset considering the number of persons in househild
+summary <- data_v40 |>
+  group_by(n_pid_HH) |>
+  summarise(
+    total_hid = n(),
+    distinct_hid = n_distinct(hid),
+    total_pid = n(),
+    distinct_pid = n_distinct(pid)
+  ) |>
+  arrange(n_pid_HH)
+
+print(summary)
+
+```
+
+## 1.2. Cleaned Dataset
+
+Load data
+
+```{r}
+data_v40c <- read_dta("I:/MA/amarchitto/SUARE/Bericht_finale_dataset/temp/suare_bericht_v40_Bildung_cleaned.dta")
+```
+
+
+THEMEN:
+
+1) Kinderbetreuungsbedarfe und Prävalenz
+2) Verteilung Kinder Schultypen (Schulsystem/Bundeslandgruppe)
+3) Weiterführende Bildung und Bildungsbeteiligung: Ausbildung / Uni
+
+
+VERWENDETE ITEMS:
+
+HH-Fragebogen (Betreeuungsbatterie / Schultyp)
+Personenfragebogen (Weiterführende Bildung, Soziodemoghraphische Infos über Eltern)
+
+
+
+
+Inspect data
+
+```{r}
+
+#Search for variable labels 
+find_var(data_v40c,
+         pattern = c("prev_k_birthy_v2_"),
+         search = c("all"),
+         fuzzy = TRUE) 
+
+
+# Show variable values 
+frq(data_v40c, lr3192)
+
+
+# Check if children in HH == yes
+data_v40c |>
+  frq(prev_hlk0044_v2) # [Children (<16 y.o.) in HH] yes= 1,812; no= 0
+
+# Check if pid have children or not: yes = 1668, no = 132
+data_v40c |>
+  frq(lr3192)
+
+```
+
+VARIABLEN:
+
+- pid, hid,
+- syear
+- lb0288_v2: Kind: Geschlecht (1)	
+- ks_pre_v6_: Kinder (<16) im HH: Besuch Betreuungseinrichtung (1)	
+- kc_kindbetr_1: Kinder (<16) im HH: Besuch Betreuungseinrichtung (Std./Woche) (1)
+- lb0287_v2: Kind: Geburtsjahr (1)
+- lkvpid1: Kind: Unveränderliche Personennummer (1)
+- hknr_1: Personennummer Kind (1)
+- ks_gen_v8_1: Kinder (<16) im HH: Schule (1)
+- ks_stufe_1: Kinder (<16) im HH: Klassenstufe (1)
+- ks_asc_v2_1: Kinder (<16) im HH: Hortbesuch (1)
+
+
+### 1.2.1. Clean Cleaned Dataset
+
+
+```{r}
+# Select variables that I need
+data_v40c_cleaned <- data_v40c |>
+  select(1:10, 
+         pid, age, sex_bin,syear,
+         n_pid_HH, # Anzahl Personen in HH 
+         lr3192, prev_nrkid, #Kinder
+         hknr_1:hknr_10, # Personennummer Kind
+         starts_with("ks_pre_v6_"), # Betreuungseinrichtung
+         #starts_with("kc_kindbetr_"), # Betreuungseinrichtung Stunden/Woche
+         starts_with("ks_gen_v8_"), # Schule
+         starts_with("prev_k_birthy_v2_"), 
+         #starts_with("ks_stufe_"), # Klassenstufe
+         #starts_with("ks_asc_v2_"), # Hortbesuch
+         #lb0288_v2, lb0291_v1, lb0294_v1, lb0297_v1, lb0300_v1, lb0303_v1	, lb0306_v1, lb0309_v1, lb1166_v1, lb1165, # Geschlecht Kind
+         #lb0287_v2, lb0290_v2, lb0293_v2, lb0296_v2,lb0299_v2, lb0302_v2,  lb0305_v2, lb0308_v2, lb1139, lb1138, # Geburtsjahr Kind
+         )
+
+
+# rename Geburtsjahr variable kid
+data_v40c_cleaned <- data_v40c_cleaned |>
+  rename(kidborn_1 = lb0287_v2,
+         kidborn_2 = lb0290_v2,
+         kidborn_3 = lb0293_v2,
+         kidborn_4 = lb0296_v2,
+         kidborn_5 = lb0299_v2,
+         kidborn_6 = lb0302_v2,
+         kidborn_7 = lb0305_v2,
+         kidborn_8 = lb0308_v2,
+         kidborn_9 = lb1139,
+         kidborn_10 = lb1138)
+
+
+
+# Replace missing values with NA:
+
+na_numbers <- c(-8:-1) #this are the missing values that I want NA
+
+data_v40c_cleaned <- data_v40c_cleaned |>
+  replace_with_na_all(condition = ~.x %in% na_numbers)
+
+```
+
+
+# 2. Analysis (Cleaned Dataset)
+
+
+```{r}
+# what is the gender situation of households
+data_v40c_cleaned |>
+  frq(sex_bin)
+
+# how many children (<16 in HH) are present by hid? 
+data_v40c_cleaned |>
+  distinct(hid, .keep_all = TRUE) |>
+  frq(prev_nrkid)
+
+
+# how old are children (<16 in HH): exploring vars prev_k_birthy_v2_
+test <- data_v40c_cleaned |>
+  mutate(across(starts_with("prev_k_birthy_v2_"), ~ 2023 - ., .names = "age_k_{.col}"))
+
+combined_ages <- test |>
+  distinct(hid, .keep_all = TRUE) |>
+  select(starts_with("age_k_prev_k_birthy_v2_")) |>
+  unlist()
+
+table(combined_ages)
+
+
+
+# Categorize children into eligibility groups (0-5 for childcare, 6-17 for school)
+test_2 <- test |>
+  mutate(across(starts_with("age_k_"), ~ case_when(
+    . < 6 ~ 1,               # Age 0-5: eligible for childcare
+    . >= 6 & . <= 17 ~ 2,   # Age 6-17: eligible for school
+    TRUE ~ NA_real_         # Handle any other values (optional)
+  ), .names = "age_k_categ_{.col}"))
+  
+
+
+
+# starting analysis of single parents (pid==hid==539)
+single_parents <- test_2 |>
+  filter(n_pid_HH == 1) |>
+  distinct(hid, .keep_all = TRUE) |>
+  select(starts_with("age_k_categ_")) |>
+  unlist()
+  
+table(single_parents)
+
+
+
+# how are school types distributed?
+
+school <- test |>
+  distinct(hid, .keep_all = TRUE) |>
+  select(starts_with("ks_gen_v8_")) |>
+  unlist()
+
+table(school)
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+Calculating frequency tables for 1. Child, 2. Child... will be possible however not very effective as I want descriptive statistics for every child
+
+
+```{r}
+# School type
+data_v40c_cleaned |>
+  frq(ks_gen_v8_1)
+
+# Besuch Betreuungseinrichtung
+data_v40c_cleaned |>
+  frq(ks_pre_v6_1)
+
+```
+
+
+
+For real analysis I first need do some tidying: transform from wide to long format
+
+```{r}
+data_v40c_long <- data_v40c_cleaned |>
+  pivot_longer(
+    cols = starts_with("hknr_"),
+    names_to = "kind",
+    values_to = "pidkind") |>
+  
+  pivot_longer(
+    cols = starts_with("ks_gen_v8_"),
+    names_to = "schulbildung",
+    values_to = "schule"
+  ) |>
+  pivot_longer(
+    cols = starts_with("ks_pre_v6_"),
+    names_to = "betreuungseinrichtungsbesuch",
+    values_to = "betreuungseinrichtung"
+  ) |>
+  pivot_longer(
+    cols = starts_with("prev_k_birthy_v2_"),
+    names_to = "geburt",
+    values_to = "geburtsjahr"
+  ) |>
+  
+  filter(str_sub(kind, -1) == str_sub(schulbildung, -1) & 
+           str_sub(kind, -1) == str_sub(betreuungseinrichtungsbesuch, -1) &
+           str_sub(kind, -1) == str_sub(geburt, -1)) |>  # filter rows so that only those stay in which the index of the variable names match (z.b. hknr_1 matches ks_gen_v8_1 and ks_pre_v6_1 and ks_asc_v2_1)
+  select(-kind, -schulbildung, - betreuungseinrichtungsbesuch, -geburt) # only needed for filtering so I can remove them now
+  
+
+
+```
+
+
+
+Clean it further
+
+```{r}
+# filter for those observations with children -> 
+# Currently there are 10 x 1812 observations as the child variables range from _1 to _10 while most household heads only have a few if any children
+data_v40c_long_clean <- data_v40c_long |>
+  filter(if_all(c("pidkind"), ~!is.na(.))) 
+
+
+length(unique(data_v40c_long_clean$pid)) # Descriptive: As there are now duplicates of houshold heads if they have more than one child this shows how many unique pids there are -> 1812 (parents)
+
+
+# calculate age of children
+data_v40c_long_clean <- data_v40c_long_clean |>
+  mutate(agekid = syear - geburtsjahr)
+
+# inspect age distribution of kids
+data_v40c_long_clean |>
+  filter(agekid <= 16) |>
+  frq(agekid)
+
+
+
+
+```
+
+
+## 2.1. Analysis
+
+Schulbesuch
+
+```{r}
+
+analysis_schulsex <- data_v40c_long_clean |>
+  select(schule, sex_bin) |>
+  mutate(schule = as_factor(schule),
+         sex_bin = as_factor(sex_bin)) 
+
+
+CrossTable(test$schule, test$sex_bin,
+           prop.r = TRUE, prop.c = FALSE, prop.t = FALSE, prop.chisq = FALSE)
+
+
+
+
+```
+
+
+Betreuungsbedarf
+
+```{r}
+# Distribution of children age
+
+data_v40c_long_clean |>
+  filter(agekid <= 16) |>
+  frq(agekid)
+
+```
+
+
+
+
+
+
+
+
+

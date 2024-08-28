@@ -92,6 +92,12 @@ merge 1:1 pid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabg
 	isid pid syear
 	codebook pid
 
+merge m:1 hid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabgewichte_M34569_v40_H_1.0.dta"
+	keep if _merge==3
+	drop _merge
+	isid pid syear
+	codebook pid hid
+
 save $out_data/suare_bericht_v40_data.dta, replace 
 
 	

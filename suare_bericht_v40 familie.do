@@ -53,12 +53,12 @@ label var hchild_N "Anzahl der Kinder im Haushalt"
 
 tab prev_nrkid hchild_N, m
 
- * ----- children age -----
+ * ----- children age in household -----
 
 forvalues i = 1/10 {
-    gen age_k_`i' = 2023 - prev_k_birthy_v2_`i'
+    gen age_hh_k_`i' = 2023 - prev_k_birthy_v2_`i'
 }
-tab1 age_k*
+tab1 age_hh_k*
 
  * ----- children born in Germany -----
 
@@ -75,15 +75,15 @@ duplicates report pid if child_in_G > 1
 sort pid
  * browse pid prev_k_birthy* if prev_k_birthy_v2_1 > 2021 | prev_k_birthy_v2_2 > 2021 | prev_k_birthy_v2_3 > 2021 | prev_k_birthy_v2_4 > 2021 | prev_k_birthy_v2_5 > 2021 | prev_k_birthy_v2_6 > 2021 | prev_k_birthy_v2_7 > 2021 | prev_k_birthy_v2_8 > 2021 | prev_k_birthy_v2_9 > 2021 | prev_k_birthy_v2_10 > 2021
 
- * ----- Youngest child: age group -----
+ * ----- youngest child in hh: age group -----
 
-foreach var of varlist age_k* {
+foreach var of varlist age_hh_k* {
 	replace `var' = . if `var'<0
 }
 
-egen youngest_child = rowmin(age_k*) 
+egen youngest_child = rowmin(age_hh_k*) 
 sort pid
-br pid youngest_child age_k*
+br pid youngest_child age_hh_k*
 
 gen h_child_age=.
 recode h_child_age .=1 if h_child_hh == 0
@@ -109,7 +109,7 @@ label values h_child_age h_child_age_lab
 
 tab youngest_child h_child_age, m
 
- * ----- Children in the household (separate dummies) -----
+ * ----- children in the household (separate dummies, based on youngest) -----
 
 gen h_child_age_0_2 = 0 if h_child_hh == 0 
 replace h_child_age_0_2 = 1 if h_child_age == 2
@@ -134,6 +134,54 @@ label values h_child_age_7_17 child_age_dummy_lab
 tab h_child_age h_child_age_0_2, m
 tab h_child_age h_child_age_3_6, m
 tab h_child_age h_child_age_7_17, m
+
+ * ----- age groups, children in hh (separate dummies, not just youngest) -----
+ 
+* any child younger than 3
+gen child_under_3 = 0
+forval i = 1/10 {
+    replace child_under_3 = 1 if age_hh_k_`i' < 3 & age_hh_k_`i' != .
+}
+	tab child_under_3
+
+* any child between 3 and 6
+gen child_3_to_6 = 0
+forval i = 1/10 {
+    replace child_3_to_6 = 1 if age_hh_k_`i' >= 3 & age_hh_k_`i' <= 6 & age_hh_k_`i' != .
+}
+	tab child_3_to_6
+
+* any child between 7 and 16
+gen child_7_to_16 = 0
+forval i = 1/10 {
+    replace child_7_to_16 = 1 if age_hh_k_`i' >= 7 & age_hh_k_`i' <= 16 & age_hh_k_`i' != .
+}
+	tab child_7_to_16
+
+
+* any child older than 16
+gen child_over_16 = 0
+forval i = 1/10 {
+    replace child_over_16 = 1 if age_hh_k_`i' > 16 & age_hh_k_`i' != .
+}
+	tab child_over_16
+
+ * ----- children age: 
+	* nicht nur in household -----
+
+gen age_k_1 = 2023 - lb0287_v2
+gen age_k_2 = 2023 - lb0290_v2
+gen age_k_3 = 2023 - lb0293_v2
+gen age_k_4 = 2023 - lb0296_v2
+gen age_k_5 = 2023 - lb0299_v2
+gen age_k_6 = 2023 - lb0302_v2
+gen age_k_7 = 2023 - lb0305_v2
+gen age_k_8 = 2023 - lb0308_v2
+gen age_k_9 = 2023 - lb1139
+gen age_k_10 = 2023 - lb1138
+
+sort pid hid
+br pid hid age_* lr3192 lb0285 prev_hlk0044_v2 prev_nrkid lb0289_v6 lb0292_v6 lb0295_v6 lb0298_v6 lb0301_v6
 
   * ----------
     * PARTNER

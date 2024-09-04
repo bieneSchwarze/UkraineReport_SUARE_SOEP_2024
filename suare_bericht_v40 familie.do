@@ -16,7 +16,7 @@ use $out_data/suare_bericht_v40_data.dta, clear
 
  * ----- CHILDREN IN HOUSEHOLD -----
 
- * ----- Children (dummy) -----
+ * ----- Children (dummy, nicht nur im hh) -----
 
 gen children = lr3192
 recode children 2 = 0 
@@ -43,6 +43,7 @@ tab prev_nrkid prev_hlk0044_v2
 tab h_child_hh
 	
  * Übereinstimmung aber nicht 100% ?
+ * if lb0289_v6==1, lb0292_v6==1, usw? wohnort hier im hh
 
  * ----- Number of children in household -----
  

@@ -78,4 +78,4 @@ sort hid child_id age_k_ sex_k_
   drop if missing(age_k_) | missing(sex_k_)
  
  
-save $out_data/familien_reshape.dta, replace
+save $out_data/suare_bericht_reshape_kinder.dta, replace

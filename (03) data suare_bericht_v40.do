@@ -2,7 +2,7 @@ clear all
 set maxvar 10000
 capture log close
 
-global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddatenlieferung_REF_7709_20240227"
+global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023-Enddaten_REF_7709_Update_1_20240904"
 
 global AVZ ""
 global do "$AVZ/do/"
@@ -29,7 +29,7 @@ merge 1:1 pid hid syear using $out_data\p-ref_non-missing
 merge 1:1 pid hid syear using $in\Stichprobendaten\soep-core-2023-pbrutto.dta
 	keep if _merge==3
 	drop _merge
-	codebook pid	//  unique 8,555
+	codebook pid	//  unique 8,553
 	isid pid syear
 	tab samplehh sample1, m
 
@@ -90,7 +90,6 @@ merge 1:1 pid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabg
 	keep if _merge==3
 	drop _merge
 	isid pid syear
-	codebook pid
 
 merge m:1 hid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabgewichte_M34569_v40_H_1.0.dta"
 	keep if _merge==3
@@ -100,7 +99,6 @@ merge m:1 hid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabg
 
 save $out_data/suare_bericht_v40_data.dta, replace 
 
-	
 /* ----------------------------
     Recoding of missing values
   ----------------------------- 

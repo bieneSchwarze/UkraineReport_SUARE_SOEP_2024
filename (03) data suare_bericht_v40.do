@@ -86,12 +86,14 @@ save $out_data/suare_bericht_v40_data.dta, replace
 /* ----------
     weights
   ----------- */
-merge 1:1 pid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabgewichte_M34569_v40_P_1.0.dta"
+global weights "x\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0"
+ 
+merge 1:1 pid using $weights\Vorabgewichte_M34569_v40_P_1.0.dta
 	keep if _merge==3
 	drop _merge
 	isid pid syear
 
-merge m:1 hid using "I:\MA\fsuettmann\Vorabgewichte_v40_IAB_BAMF_SOEP_1.0\Vorabgewichte_M34569_v40_H_1.0.dta"
+merge m:1 hid using $weights\Vorabgewichte_M34569_v40_H_1.0.dta
 	keep if _merge==3
 	drop _merge
 	isid pid syear

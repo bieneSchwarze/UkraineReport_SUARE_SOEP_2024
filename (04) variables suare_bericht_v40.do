@@ -2,6 +2,8 @@ clear all
 set maxvar 10000
 capture log close
 
+global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023-Enddaten_REF_7709_Update_1_20240904"
+
 global AVZ ""
 global do "$AVZ/do/"
 global out_log "$AVZ/log"

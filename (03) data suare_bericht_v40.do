@@ -111,7 +111,8 @@ http://about.paneldata.org/soep/dtc/data-structure.html
 -4	Inadmissable multiple response
 -5	Not included in this version of the questionnaire
 -6	Version of questionnaire with modified filtering
--8	Question not part of the survey program this year*
+-8	Question not part of the survey program this year
+-9	Missing due to a terminated interview *
 
  --------------------------------------------------------- */
 
@@ -129,7 +130,8 @@ label define miss_lab .a "No information / Don't know" .b "Does not apply" ///
 .c "Implausible value" .d "Inadmissable multiple response" /// 
 .e "Not included in this version of the questionnaire" ///
 .f "Version of questionnaire with modified filtering" ///
-.g "Question not part of the survey program this year" , replace
+.g "Question not part of the survey program this year" ///
+.h "Missing due to a terminated interview", replace
 
  * non-string variables
 qui ds, not(type string)
@@ -141,12 +143,12 @@ foreach var of varlist `nostring' {
 	local labelname : value label `var'      
 	qui gen `var'_temp = `var'
     * decode missing values 
-	qui recode `var'_temp (-1 = .a) (-2 = .b) (-3 = .c) (-4 = .d) (-5 = .e) (-6 = .f) (-8 = .g)
+	qui recode `var'_temp (-1 = .a) (-2 = .b) (-3 = .c) (-4 = .d) (-5 = .e) (-6 = .f) (-8 = .g) (-9 = .h)
         
     label values `var'_temp miss_lab
         
     * replace missing values 
-	foreach mv of numlist .a .b .c .d .e .f .g {
+	foreach mv of numlist .a .b .c .d .e .f .g .h {
     	qui replace `var' = `mv' if `var'_temp == `mv'
         }
         

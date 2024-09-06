@@ -11,28 +11,28 @@
 (02) p_ref pref_bef.do
 (03) data suare_bericht_v40.do
 
-Alltoghether they produce the dataset: suare_v40_variablen.dta- which is the BASE data set
+Altogether they produce the dataset: suare_bericht_v40_data.dta- which is the BASE data set
 
-Plus horter version with selected variables : SOEP_v40_clean.dta
+Plus shorter version with selected variables : SOEP_v40_clean.dta
 
 * Starting here : do files that create different versions of variables but are either not revised or are work in progres
 
-(04) variables suare_bericht_v40.do /// - Provided by IAB
+(04) variables suare_bericht_v40.do /// 
 
 *SOEP Do files- Work in progress
 suare_bericht_v40 Bildung(SOEP) // Work in progress Children & Education
 suare_bericht_v40 familie.do  // Work in Progress
-suare_bericht_v40 reshape.do // Work in progress Phili
+suare_bericht_v40 reshape.do // Phili: Analyse auf Ebene der einzelnen Kinder
 suare_bericht_v40_Bildung.Rmd // Work in progress in R
 
+*Provided by IAB and/or SOEP (enthält Gesundheit)
+suare_bericht_40 sociodemographic.do
 
 *Provided by the IAB
 suare_bericht_v40 education.do  
 suare_bericht_v40 employment.do
-suare_bericht_40 sociodemographic.do
 
-
-*Prvided by BAMF
+*Provided by BAMF
 suare_bericht_v40 sprache & kurse.do
 
 

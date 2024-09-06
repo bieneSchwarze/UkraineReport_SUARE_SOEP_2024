@@ -2,7 +2,7 @@ clear all
 set maxvar 10000
 capture log close
 
-global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023_Enddatenlieferung_REF_7709_20240227"
+global in "\\hume\rdc-arch\consolidate\soep-core\v40\Enddaten\SOEP-2023-Enddaten_REF_7709_Update_1_20240904"
 
 global AVZ ""
 global do "$AVZ/do/"
@@ -24,7 +24,7 @@ foreach var of local vars {
     local min_val = r(min)
     local max_val = r(max)
 
-    if inrange(`min_val', -8, -1) & inrange(`max_val', -8, -1) {
+    if inrange(`min_val', -8, -1) & inrange(`max_val', -9, -1) {
         qui display "`var'"
         local count = `count' + 1
         

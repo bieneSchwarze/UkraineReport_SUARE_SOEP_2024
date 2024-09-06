@@ -24,7 +24,7 @@ foreach var of local vars {
     local min_val = r(min)
     local max_val = r(max)
 
-    if inrange(`min_val', -8, -1) & inrange(`max_val', -9, -1) {
+    if inrange(`min_val', -9, -1) & inrange(`max_val', -9, -1) {
         qui display "`var'"
         local count = `count' + 1
         

@@ -162,6 +162,22 @@ foreach var of varlist `nostring' {
 
 save $out_data/suare_bericht_v40_data.dta, replace 
 
+ * optional: drop other variables with only missing values
+ 
+qui ds, has(type numeric)
+local numeric_vars `r(varlist)'
+
+foreach var of local numeric_vars {
+    quietly summarize `var', detail
+    local min = r(min)
+    local max = r(max)
+
+    if (`min' == . & `max' == .) {
+        display "`var'"
+		drop `var'
+    }
+}
+
  *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
 
 clear

@@ -141,7 +141,7 @@ Inspect data
 
 #Search for variable labels 
 find_var(data_v40c,
-         pattern = c("prev_k_birthy_v2_"),
+         pattern = c("Familienstand" ),
          search = c("all"),
          fuzzy = TRUE) 
 
@@ -222,7 +222,7 @@ data_v40c_cleaned <- data_v40c_cleaned |>
 ```
 
 
-# 2. Analysis (Cleaned Dataset)
+# 2. Analysis 1 (Cleaned Dataset)
 
 
 ```{r}
@@ -286,10 +286,6 @@ table(school)
 
 
 ```
-
-
-
-
 
 
 
@@ -407,6 +403,181 @@ data_v40c_long_clean |>
 
 
 
+
+
+
+# 3. Analysis 2 (New, modified dataset)
+
+```{r}
+data_v40cc <- read_dta("I:/MA/amarchitto/SUARE/Bericht_finale_dataset/temp/suare_bericht_v40_Bildung_relmatrix.dta")
+
+```
+
+
+Inspect Data
+
+```{r}
+#Search for variable labels 
+find_var(data_v40cc,
+         pattern = c("kc_wpart_2" ),
+         search = c("all"),
+         fuzzy = TRUE) 
+
+
+data_v40cc |> summarise(n_distinct(pid))
+```
+
+
+
+```{r}
+data_v40cc |> frq(kc_wpart_)
+
+
+
+test_data <- data_v40cc |> 
+  select(hid, pid, sex_bin, age, n_hid_HH, n_pid_HH, prev_nrkid, lr3192, lb0285, 
+         starts_with("hknr_"), starts_with("lkvpid"), starts_with("age_k_"), 
+         kc_wselbst_,
+         kc_wpart_,
+         kc_weltern_,
+         kc_wgeltern_,
+         kc_wgesch_,
+         kc_wverw_,
+         kc_wtagm_,
+         kc_wbezb_,
+         kc_wfreund_,
+         kc_wnone_
+         )
+
+```
+
+
+```{r}
+# Var erstellen die Betreeungsvariablen summiert
+test_data1 <- test_data |>
+  rowwise() |>
+  mutate(summe_betreuung = sum(c_across(kc_wselbst_ : kc_wnone_), na.rm = TRUE)) |>
+  ungroup()
+
+test_data1 |>
+  frq(summe_betreuung)
+
+```
+
+Wie verteilt sich Betreuung?
+
+Value |   N | Raw % | Valid % | Cum. %
+--------------------------------------
+    0 | 867 | 50.44 |   50.44 |  50.44
+    1 | 318 | 18.50 |   18.50 |  68.94
+    2 | 402 | 23.39 |   23.39 |  92.32
+    3 | 104 |  6.05 |    6.05 |  98.37
+    4 |  28 |  1.63 |    1.63 | 100.00
+ <NA> |   0 |  0.00 |    <NA> |   <NA>
+
+
+Möglichkeiten:
+
+- Sie selbst (Leiter:in des Haushalts)
+- Partner / Partnerin
+- Vater / Mutter des Kindes (falls er nicht Ihr Partner / sie nicht Ihre Partnerin
+ist)
+- Großeltern des Kindes
+- Ältere Geschwister des Kindes
+- Andere Verwandte
+- Tagesmutter außerhalb des Haushalts
+- Bezahlte Betreuungsperson kommt ins Haus
+- Freunde / Bekannte / Nachbarn
+- Keine Person
+
+
+```{r}
+
+test_data2 <- test_data1 |>
+  mutate(betreuung_muster = paste0(
+    ifelse(is.na(kc_wselbst_), "0" , "1"),
+    ifelse(is.na(kc_wpart_), "0" , "1"),
+    ifelse(is.na(kc_weltern_), "0" , "1"),
+    ifelse(is.na(kc_wgeltern_), "0" , "1"),
+    ifelse(is.na(kc_wgesch_), "0" , "1"),
+    ifelse(is.na(kc_wverw_), "0" , "1"),
+    ifelse(is.na(kc_wtagm_), "0" , "1"),
+    ifelse(is.na(kc_wbezb_), "0" , "1"),
+    ifelse(is.na(kc_wfreund_), "0" , "1"),
+    ifelse(is.na(kc_wnone_), "0" , "1")
+  ))
+
+
+
+test_data2 |>
+  group_by(betreuung_muster) |>
+  summarise(n = n()) |>
+  mutate(freq = (n / sum(n)) * 100)
+
+
+
+
+# Überprüfen ob Zahlenmuster Sinn ergibt: Hier 1000000000 -> Richtig!
+
+anzahl <- test_data2 |>
+  filter(kc_wselbst_ == 1,
+         is.na(kc_wpart_),
+         is.na(kc_weltern_),
+         is.na(kc_wgeltern_),
+         is.na(kc_wgesch_),
+         is.na(kc_wverw_),
+         is.na(kc_wtagm_),
+         is.na(kc_wbezb_),
+         is.na(kc_wfreund_),
+         is.na(kc_wnone_)
+         )
+
+
+```
+
+
+
+Wie ließe sich Kategorien weiter eingrenzen?
+
+- Familienangehörige: Sie selbst, Partner/Partnerin, Vater/Mutter, Großeltern, Ältere Geschwister, andere Verwandte
+- Freunde/Bekannte/Nachbarn
+- Professionelle Betreuung,
+- Keine Betreuung
+
+
+```{r}
+test_data3 <- test_data2 |>
+  mutate(betreuung = case_when(
+    
+    # Keine Betreuung
+    kc_wnone_ == 1 ~ "Keine Betreuung",
+    
+    # Nur Familie
+    (kc_wselbst_ == 1 | kc_wpart_ == 1 | kc_weltern_ == 1 | kc_wgeltern_ == 1 | kc_wgesch_ == 1 | kc_wverw_ == 1) &
+    is.na(kc_wtagm_)  & is.na(kc_wbezb_) & is.na(kc_wfreund_) ~ "Familie",
+    
+    # Nur Bekannte
+    kc_wfreund_ == 1 & is.na(kc_wselbst_) & is.na(kc_wpart_) & is.na(kc_weltern_) & is.na(kc_wgeltern_) & is.na(kc_wgesch_) & is.na(kc_wverw_) & is.na(kc_wtagm_) & is.na(kc_wbezb_) ~ "Bekannte",
+    
+    # Nur Professionelle Betreuung
+    (kc_wtagm_ == 1 | kc_wbezb_ == 1) &
+    is.na(kc_wselbst_) & is.na(kc_wpart_) & is.na(kc_weltern_) & is.na(kc_wgeltern_) & is.na(kc_wgesch_) & is.na(kc_wverw_) & is.na(kc_wfreund_) ~ "Professionelle Betreuung",
+    
+    # Familie + Bekannte
+    (kc_wselbst_ == 1 | kc_wpart_ == 1 | kc_weltern_ == 1 | kc_wgeltern_ == 1 | kc_wgesch_ == 1 | kc_wverw_ == 1) &  (kc_wfreund_ == 1) & is.na(kc_wtagm_) & is.na(kc_wbezb_) ~ "Familie + Bekannte",
+     
+    # Familie + Professionelle Betreuung
+    (kc_wselbst_ == 1 | kc_wpart_ == 1 | kc_weltern_ == 1 | kc_wgeltern_ == 1 | kc_wgesch_ == 1 | kc_wverw_ == 1) &  (kc_wtagm_ == 1 | kc_wbezb_ == 1) & is.na(kc_wfreund_) ~ "Familie + Professionelle Betreuung",
+    
+    # Bekannte + Professionelle Betreuung
+    (kc_wfreund_ == 1) & (kc_wtagm_ == 1 | kc_wbezb_ == 1) & is.na(kc_wselbst_) & is.na(kc_wpart_) & is.na(kc_weltern_) & is.na(kc_wgeltern_) & is.na(kc_wgesch_) & is.na(kc_wverw_) ~ "Bekannte + Professionelle Betreuung",
+    
+    # Familie + Professionelle Betreuung + Bekannte
+    (kc_wselbst_ == 1 | kc_wpart_ == 1 | kc_weltern_ == 1 | kc_wgeltern_ == 1 | kc_wgesch_ == 1 | kc_wverw_ == 1) &  (kc_wtagm_ == 1 | kc_wbezb_ == 1) &  (kc_wfreund_ == 1) ~ "Familie + Professionelle Betreuung + Bekannte",
+    
+    TRUE ~ NA
+  ))
+```
 
 
 

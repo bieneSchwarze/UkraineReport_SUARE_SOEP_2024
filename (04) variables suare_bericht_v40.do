@@ -71,6 +71,26 @@ label var age1stsq "Alter bei erstem Interview, sq."
 
 tab age1st age_cat2,m
 
+ * ----- Familienstand -----
+ 
+gen partnership = . 
+replace partnership = 0 if pld0131_v3 == 3 | plj0629 == 2
+replace partnership = 1 if pld0131_v3 == 1 | pld0131_v3 == 2 | plj0629 == 1
+replace partnership = 2 if pld0131_v3 == 4 | pld0131_v3 == 5
+replace partnership = 3 if pld0131_v3 == 6 | pld0131_v3 == 7
+ 
+label var partnership "Familienstand"
+
+#delimit
+label define partnership_lab 
+	0 "Kein Partner" 
+	1 "Partner/Verheiratet" 
+	2 "Geschieden" 
+	3 "Verwitwet"
+	, replace;
+#delimit cr
+ lab val partnership partnership_lab
+
  * ---------- Arrival ----------
   
 gen arrival_yr = .
@@ -144,6 +164,36 @@ tab mnth_s_arvl_cat, m
  * ----- für immer in DE ---- 
 gen forever_de_v40 = plj0085_v1 == 1 if plj0085_v1>0 & plj0085_v1<.
  lab var forever_de_v40 "für immer in DE"
+
+* ----- Bleibeabsichten ---- 
+
+gen settle_intent = 1 if forever_de_v40 == 1
+replace settle_intent = 4 if plj0086_v1 == .a & plj0087 == .a
+replace settle_intent = 3 if plj0086_v1 == 1 | (plj0087 >= 1 & plj0087 < .)
+replace settle_intent = 2 if plj0086_v1 == 2 
+
+#delimit
+	label define settle_intent_lab 
+	1 "[1] Für immer in DE" 
+	2 "[2] Noch einige Jahre"
+	3 "[3] Höchstens noch ein Jahr"
+	4 "[4] Unischer"
+	, replace;
+#delimit cr
+label var settle_intent "Bleibeabsichten"
+label values settle_intent settle_intent_lab
+
+ * ---------------------
+  * Dummy für Kohorte
+ * ---------------------
+
+gen kohorte = .
+replace kohorte = 1 if arrival_date < ym(2022,6)
+replace kohorte = 2 if arrival_date => ym(2022,6) & arrival_date!= .
+
+label define kohorte_lab 1 "Zuzug bis Juni 2022" 2 "Zuzug nach Juni 2022"
+label var kohorte "Zuzugskohorte"
+label values kohorte kohorte_lab
 
   * ---------------------
     * Region in Germany
@@ -227,7 +277,6 @@ rename lm0076i12 uni2m
  * Promotionsstudium: Jahre, Monate
 rename lm0076i06 phd1yr 
 rename lm0076i13 phd1m
-
 
 sum years_sch0 voc1yr voc1m voc2yr voc2m voc3yr voc3m uni1yr uni1m uni2yr uni2m phd1yr phd1m voc4m voc4yr 
  
@@ -698,16 +747,18 @@ tab isceda11a_aggr, m
  * ---------- EMPLOYMENT ----------
 
  * ----- Persons in paid work -----
-	#delimit
-	label def employment
-		1 "vollzeit"
-		2 "teilzeit"
-		3 "Ausbildung/Lehre/Umschulung"
-		4 "geringfügig/unregelmäßig"
-		5 "Kurzarbeit"
-		10 "betriebliches Praktikum"
-		9 "Nicht erwerbstätig", replace;
-	#delimit cr
+
+#delimit
+label def employment
+	1 "vollzeit"
+	2 "teilzeit"
+	3 "Ausbildung/Lehre/Umschulung"
+	4 "geringfügig/unregelmäßig"
+	5 "Kurzarbeit"
+	6 "Freiwilliges soziales Jahr"
+	10 "betriebliches Praktikum"
+	9 "Nicht erwerbstätig", replace;
+#delimit cr
 
 g actual_empl = .
 label var actual_empl "Derzeit: Erwerbstätigkeitsstatus"
@@ -717,18 +768,22 @@ replace actual_empl = 1 if inlist(plb0022_v11,1)
 replace actual_empl = 2 if inlist(plb0022_v11,2) 
 replace actual_empl = 3 if inlist(plb0022_v11,3) 
 replace actual_empl = 4 if inlist(plb0022_v11,4) 
-replace actual_empl = 5 if inlist(plb0022_v11,12) 
-replace actual_empl = 10 if inlist(plb0022_v11,10)  
-replace actual_empl = 9 if inlist(plb0022_v11,5,7,9,11) 
+replace actual_empl = 5 if inlist(plb0022_v11,10)
+replace actual_empl = 6 if inlist(plb0022_v11,7)
+replace actual_empl = 10 if inlist(plb0022_v11,11)
+replace actual_empl = 9 if inlist(plb0022_v11,5,9)
 
 tab actual_empl syear, m row
 tab plb0022_v11 actual_empl
 	
  * ---------- Erwerbstätig ----------
+ 
 gen work = .
 replace work = 1 if inlist(plb0022_v11,1,2,3,4,5,7,10,11)
-replace work = 0 if inlist(plb0022_v11,9)
-label var work "Derzeit: Erwerbstätigkeit"
+replace work = 0 if inlist(plb0022_v11,9) 
+label var work "Derzeit: Erwerbstätig"
+label define work_lab 0 "[0] Nein" 1 "[1] Ja"
+label values work work_lab
 tab plb0022_v11 work, m	
 
  * ----- Employed in paid work -----
@@ -739,6 +794,30 @@ replace paid_work = 0 if plc0013_v2 == 0 & plc0014_v2 == 0
 label var paid_work "Employed in paid work"
 tab work paid_work
 
+ * ---------- Dummy für Vollzeit ----------
+
+gen vollzeit = .
+replace vollzeit = 1 if actual_empl == 1
+replace vollzeit = 0 if actual_empl > 1 & actual_empl != . 
+
+label define vollzeit_lab 0 "nicht Vollzeit" 1 "Vollzeit"
+label var vollzeit "Vollzeitbeschäftigung"
+label values vollzeit vollzeit_lab
+
+ * ---------- Dummy für geringfügige Beschäftigung ----------
+
+gen geringf = actual_empl == 4 if actual_empl < .
+label define geringf_lab 0 "Nein" 1 "Ja"
+label var geringf "geringfügige Beschäftigung"
+label values geringf geringf_lab
+
+ * ----------  Dummy für Selbstständige ----------
+
+gen selfem = plb0568_v1 == 1 if plb0568_v1 < .
+label define selfem_lab 0 "Nein" 1 "Ja"
+label var selfem "Selbständige"
+label values selfem selfem_lab
+
  * ----- Employed / Not/looking for work -----
 gen lfs_status = .
 recode lfs_status .= 1 if paid_work == 1
@@ -746,7 +825,12 @@ recode lfs_status .= 2 if plb0424_v2 == 1
 recode lfs_status .= 3 if plb0424_v2 == 2
 recode lfs_status .= 3 if paid_work == 0
 
-label define lfs_status 1 "[1] Erwerbstätig (gegen Entgelt)" 2 "[2] Aktiv arbeitssuchend (letzte 4 Wochen)" 3 "[3] Nicht arbeitssuchend", replace
+#delimit
+label define lfs_status 
+	1 "[1] Erwerbstätig (gegen Entgelt)" 
+	2 "[2] Aktiv arbeitssuchend (letzte 4 Wochen)" 
+	3 "[3] Nicht arbeitssuchend", replace;
+#delimit cr
 label var lfs_status "Arbeitsmarktstatus, 3 cat."
 label values lfs_status lfs_status
 
@@ -791,8 +875,14 @@ label define lmactivity_lab 0 "[0] Nein" 1 "[1] Ja"
 label var lmactivity "Erwerbsbeteiligung"
 label values lmactivity lmactivity_lab
 
-tab lmactivity 
+tab lmactivity
 
+ * ----- Dummy für aktive Arbeitssuche -----
+
+gen job_search = lfs_status == 2 if lfs_status < .
+label define job_search_lab 0 "Nein" 1 "Ja"
+label var job_search "aktiv Arbeitssuchend"
+label values job_search job_search_lab
 
   * --------------------------------------
     * VARIABLES:
@@ -1016,6 +1106,82 @@ tab branch0 sektor0_aggr2
 tab l_isco08_job09, m
 tab l_kldb2010_job09, m
 
+  * ----- LEVEL OF QUALIFICATION/JOB -----
+  
+  * ----- (TÄTIGKEITSNIVEAU) -----
+
+tab l_isco08_job09, m
+tab l_kldb2010_job09, m
+
+  * ----- ISCO OF WORK  -----
+
+clonevar isco0_08 = l_isco08_job09
+recode isco0_08 (0/99 = .)
+tab isco0_08 if work0 == 1, m
+	
+****ISEI SCALE****
+iscogen isei0 = isei(isco0_08)
+label var isei0 "Job Current: ISEI scale (international socio-economic index)"
+
+iscogen isco0_1dig = major(isco0_08)
+label var isco0_1dig "ISCO vor Zuzug, 1 digit"
+
+iscogen isco0_oesch5 = oesch5(isco0_08)
+tab isco0_oesch5
+recode isco0_oesch5 (4=3) (5=4)
+
+#delimit;
+	label define isco0_oesch5_lab 
+	1 "Berufe mit Hochschulbildung" 
+	2 "Berufe mit höhere Fachausbildung" 
+	3 "Lehrberufe" 
+	4 "An- und Ungelernte"
+	, replace;
+#delimit cr
+label val isco0_oesch5 isco0_oesch5_lab	
+label var isco0_oesch5 "ISCO curr, Oesch 2006a"
+
+gen isco0_skilllev = .
+
+#delimit;
+	label define isco0_skilllev_lab
+	1 "Hilfsarbeitskräfte" 
+	2 "Fachkräfte" 
+	3 "Gehobene Fachkräfte/ Akademische Berufe"
+	, replace;
+#delimit cr
+label val isco0_skilllev isco0_skilllev_lab
+label var isco0_skilllev "ISCO curr, skill level"
+
+replace isco0_skilllev = 1 if inlist(isco0_1dig,9)
+replace isco0_skilllev = 2 if inlist(isco0_1dig,4,5,6,7,8)
+replace isco0_skilllev = 3 if inlist(isco0_1dig,1,2,3)
+
+**** KILDB ****
+tab l_kldb2010_job09
+recode l_kldb2010_job09 (-10/99 = .)
+
+clonevar kldb0 = l_kldb2010_job09
+recode kldb0 (-10/0 = .) (.b .c .e = .)
+tab kldb0 if work0 == 1, m
+
+tostring kldb0, gen(helpvar0)
+replace helpvar0 = substr(helpvar0,-1,.) 
+destring helpvar0, replace
+
+#delimit
+	recode helpvar0
+		(1 = 1 "Helfer")
+		(2 = 2 "Fachkraft")
+		(3 = 3 "Spezialist")
+		(4 = 4 "Experte")
+		, gen(niveau0)
+		;
+#delimit cr
+
+drop helpvar0
+tab niveau0 if work0 == 1, m
+lab var niveau0 "Anforderungsniveau (KLDB) vor zuzug"
 
   * ---------------------------------------------
     * VARIABLES: SES, LABOR MARKET AFTER ARRIVAL
@@ -1041,6 +1207,13 @@ label values future_empl future_empl_lab
 tab future_empl, m
 tab actual_empl future_empl
 tab plb0417_v2 future_empl
+
+ * ----- DUMMY WORK ASPIRATION -----
+
+recode future_empl (0 = .) (1 2 = 0) (3 4 = 1), gen(future_empl_dum)
+label define future_empl_dum_lab 0 "Nein" 1 "Ja"
+label var future_empl_dum "Erwerbsaspiration"
+label values future_empl_dum future_empl_dum_lab
 
  * ----- BERUFLICHE STELLUNG (OCCUPATIONAL POSITION?) -----
 
@@ -1108,6 +1281,22 @@ label var work_maßnahm "Maßnahme der Agentur für Arbeit oder 1-Euro-Job"
 label values work_maßnahm work_maßnahm
 
 tab work_maßnahm work, m
+
+ * ----- Abschlussanerkennung ------
+ 
+clonevar hilfe_anerkennung = lr3595i06
+ 
+egen help_an_moeg = anymatch(lb0229 lb0230 lb0231 lm0071i0? lb1376 lb0233), values(1)
+egen help_an_ja = anymatch(lm0701l0*), values(1)
+ 
+gen abschl_anerkenn = .
+replace abschl_anerkenn = 1 if help_an_ja == 1 & help_an_moeg == 1
+replace abschl_anerkenn = 0 if help_an_ja == 0 & help_an_moeg == 1
+drop help_an*
+
+label define abschl_anerkenn_lab 0 "[0] Nein" 1 "[1] Ja"
+label var abschl_anerkenn "Anerkennung eines Abschlusses beantragt"
+label values abschl_anerkenn abschl_anerkenn_lab 
 
  * ----- Wage (Month) -----
 
@@ -1806,12 +1995,29 @@ log using $out_log/suare_v40_variablen.log, append
   * --------------------
 
 #delimit
-keep pid hid cid syear n N prev_stichprobe samplehh instrument mode start* end* day_interview intv_year_month actual_empl work paid_work lfs_status lfs_status_dtl lmactivity female age age1st age1stsq age_cat age_cat2 arrival_yr arrival_mth arrival_date mnth_s_arrival mnth_s_arvl_cat ///
-edu_asl years_sch0 years_ausbhoch0 total_years_edu0 school_type school_degree qual_type qual_type_deg school_aus_cert beruf_aus_cert schul_abschluss_aus schulbesuch_aus iabschlussa ausbildung_aus no_school ///  
-isceda11a iscedp11a isceda11a_aggr iscedp11a_aggr ec_status0 inc_status0 empl0 empl0_aggr work0 branch0 branch0_vgr sektor0_aggr2 l_isco08_job09 l_kldb2010_job09 ///
-actual_empl work future_empl empl_type work_befrist work_maßnahm work_blohn work_nlohn work_hours_contract work_hours_actual work_blohn_hour work_nlohn_hour branch branch_vgr sektor_aggr2 ///
-speak_german write_german read_german german_score speak_english write_english read_english english_score int_bamf_part int_bamf_finished int_bamf_curr other_course_part other_course_fin other_course_aktl deu_aggr_part deu_aggr_finished deu_aggr_num mths_kursstart yrs_kursstart ///
-children h_child_hh hchild_N youngest_child h_child_age h_child_age_0_2 h_child_age_3_6 h_child_age_7_17 partnr partner_vorh forever_de_v40 bula	;
+keep pid hid cid syear n N prev_stichprobe samplehh instrument mode start* end* 
+day_interview intv_year_month actual_empl work paid_work lfs_status 
+lfs_status_dtl lmactivity female age age1st age1stsq age_cat age_cat2 
+arrival_yr arrival_mth arrival_date mnth_s_arrival mnth_s_arvl_cat
+edu_asl years_sch0 years_ausbhoch0 total_years_edu0 school_type school_degree 
+qual_type qual_type_deg school_aus_cert beruf_aus_cert schul_abschluss_aus 
+schulbesuch_aus iabschlussa ausbildung_aus no_school
+isceda11a iscedp11a isceda11a_aggr iscedp11a_aggr ec_status0 inc_status0 empl0 
+empl0_aggr work0 branch0 branch0_vgr sektor0_aggr2 l_isco08_job09 
+l_kldb2010_job09 actual_empl work future_empl empl_type work_befrist 
+work_maßnahm work_blohn work_nlohn work_hours_contract work_hours_actual 
+work_blohn_hour work_nlohn_hour branch branch_vgr sektor_aggr
+speak_german write_german read_german german_score speak_english write_english 
+read_english english_score int_bamf_part int_bamf_finished int_bamf_curr 
+other_course_part other_course_fin other_course_aktl deu_aggr_part 
+deu_aggr_finished deu_aggr_num mths_kursstart yrs_kursstart children h_child_hh 
+hchild_N youngest_child h_child_age h_child_age_0_2 h_child_age_3_6 
+h_child_age_7_17 partnr partner_vorh partnership forever_de_v40 bula
+p_isco08 isco_1dig isco_oesch5 isco_skilllev p_kldb2010 kldb niveau
+isco0_08 isco0_1dig isco0_oesch5 isco0_skilllev kldb0 niveau0 arbeitslos
+timing_empl type_empl hh_leistungen hh_leistungen_hoehe
+hilfe_anerkennung abschl_anerkenn phrf23vorab_SUARE job_search
+settle_intent kohorte vollzeit geringf selfem job_search;
 #delimit cr
 
 ********************************************

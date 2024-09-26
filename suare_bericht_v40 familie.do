@@ -188,8 +188,10 @@ br pid hid age_* lr3192 lb0285 prev_hlk0044_v2 prev_nrkid lb0289_v6 lb0292_v6 lb
     * PARTNER
   * ----------
 
-gen partnr = ppnamlpnr if ppnamlpnr > 0 & ppnamlpnr < . 
-replace partnr = ppnamepnr if ppnamepnr > 0 & ppnamepnr < .
+ppnamepnr
+
+gen partnr = ppnamlpnr if ppnamlpnr > 0 & ppnamlpnr < .		// Lebenspartner 
+replace partnr = ppnamepnr if ppnamepnr > 0 & ppnamepnr < .	// Ehepartner
 
 gen partnerindicator = 1 if partnr > 0 & partnr < .
 tab partnerindicator

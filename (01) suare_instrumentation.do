@@ -10,7 +10,7 @@ global out_log "$AVZ/log"
 global out_data "$AVZ/output/"
 global out_temp "$AVZ/temp/"
 
-use $in\Methodendaten\soep-core-2023-instrumentation.dta", clear
+use "$in\Methodendaten\soep-core-2023-instrumentation.dta", clear
 
  * ------------- new time var -------------
 * (leave "end" in original format to compare)

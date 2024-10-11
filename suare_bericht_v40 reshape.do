@@ -62,6 +62,9 @@ rename lb1271 wohnort_k_10
 sort hid pid age
 br pid hid stell age sex lr3192 age_k* sex_k* wohnort_k*
 
+ * weighting
+gen khrf = hhrf23vorab_SUARE / prev_nrkid
+
  * ----- reshape ----- 
 
 reshape long plan_k_ age_k_ sex_k_ wohnort_k_, i(pid) j(child_id)

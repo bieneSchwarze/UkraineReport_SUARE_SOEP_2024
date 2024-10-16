@@ -48,7 +48,10 @@ tab female sex, m
 
  * ----- Age -----
  
-gen age = syear-gebjahr 
+gen geb_year_mont = ym(birthy, birthm)
+format geb_year_mont %tm
+ 
+gen age = trunc((intv_year_month-geb_year_mont)/12)
 label var age "Current Age"
 tab sex, sum(age)
 

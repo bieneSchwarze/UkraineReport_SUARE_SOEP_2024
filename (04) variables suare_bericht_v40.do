@@ -122,8 +122,8 @@ format arrival_date %tm
 
 label var arrival_date "Date of Arrival"
 
-	tab arrival_yr prev_stichprobe 
-	tab arrival_date prev_stichprobe 
+tab arrival_yr prev_stichprobe 
+tab arrival_date prev_stichprobe 
 
   * --------------------
     * Duration of stay
@@ -165,8 +165,9 @@ label values mnth_s_arvl_cat
 tab mnth_s_arvl_cat, m
 
  * ----- für immer in DE ---- 
+
 gen forever_de_v40 = plj0085_v1 == 1 if plj0085_v1>0 & plj0085_v1<.
- lab var forever_de_v40 "für immer in DE"
+lab var forever_de_v40 "für immer in DE"
 
 * ----- Bleibeabsichten ---- 
 
@@ -283,7 +284,7 @@ rename lm0076i13 phd1m
 
 sum years_sch0 voc1yr voc1m voc2yr voc2m voc3yr voc3m uni1yr uni1m uni2yr uni2m phd1yr phd1m voc4m voc4yr 
  
-foreach var of varlist voc1yr voc1m voc2yr voc2m voc3yr voc3m uni1yr uni1m 	uni2yr uni2m phd1yr phd1m voc4m voc4yr {
+foreach var of varlist voc1yr voc1m voc2yr voc2m voc3yr voc3m uni1yr uni1m uni2yr uni2m phd1yr phd1m voc4m voc4yr {
 	replace `var' = 0 if inlist(`var', .b)
 }
 
@@ -349,12 +350,12 @@ replace school_degree = 5 if school_type == 3 | lr3079 == 5
 label var school_degree "Schulabschluss im Ausland"
 
 #delimit
- label define school_degree
-1 "[1] Pflichtschule o. Abschl."
-2 "[2] Pflichtschule m. Abschl."
-3 "[3] Weiterfuehrende Schule"
-4 "[4] Weiterfuehrende Schule im Ausland mit Abschluss"
-5 "[5] Abschluss einer anderen Schule"
+	label define school_degree
+		1 "[1] Pflichtschule o. Abschl."
+		2 "[2] Pflichtschule m. Abschl."
+		3 "[3] Weiterfuehrende Schule"
+		4 "[4] Weiterfuehrende Schule im Ausland mit Abschluss"
+		5 "[5] Abschluss einer anderen Schule"
 		, replace;
 #delimit cr
 label values school_degree school_degree
@@ -443,10 +444,10 @@ tab qual_type_deg qual_type
 
 gen school_aus_cert = .
 
-replace school_aus_cert = 1 if qual_type_deg == 1 | qual_type_deg == 3
-replace school_aus_cert = 2 if qual_type_deg == 2 
-replace school_aus_cert = 3 if qual_type_deg == 4
-replace school_aus_cert = 4 if qual_type_deg == 5 
+replace school_aus_cert = 1 if lr3079 == 1
+replace school_aus_cert = 2 if lr3079 == 2 
+replace school_aus_cert = 3 if lr3079 == 3 | lr3079 == 4
+replace school_aus_cert = 4 if lr3079 == 5 
 replace school_aus_cert = 0 if lr3076 == 2 | lb0183 == 2
 
 #delimit 
@@ -592,10 +593,10 @@ tab qual_type_deg iabschlussa
 gen ausbildung_aus=.
 replace ausbildung_aus = 1 if inlist(qual_type_deg,1,11)
  * Betrieb angelernt
-replace ausbildung_aus = 2 if inlist(qual_type_deg,2,3,12,13)
+replace ausbildung_aus = 2 if inlist(qual_type_deg,2,3,6,12,13,16)
  * laengere Ausbildung/  berufsbildende Schule besucht
-replace ausbildung_aus = 3 if inlist(qual_type_deg,5,8,15)
-replace ausbildung_aus = 4 if inlist(qual_type_deg,4,14) // Hochschule
+replace ausbildung_aus = 3 if inlist(qual_type_deg,5,15,18)
+replace ausbildung_aus = 4 if inlist(qual_type_deg,4,7,8,14,17) // Hochschule
 replace ausbildung_aus = 5 if inlist(qual_type_deg,9,19) // Promotion
 
 #delimit
@@ -616,9 +617,10 @@ tab qual_type_deg ausbildung_aus
 
  * ----- Did not visit school (Dummy) ----
 
-* lb0183 == 2: possible answer to lb0182 (Jahr des letzten Schulbesuchs) if person did not visit school 
-
 gen no_school = 1 if lr3076  == 2 | lb0183 == 2  
+/* 37 persons answered lr3076, 28 persons answered lb0183 
+   lb0183 == 2: possible answer to lb0182 (Jahr des letzten Schulbesuchs) 
+   if person did not visit school abroad */
 
 label define no_school_lab 1 "[1] Ja"
 label var no_school "Kein Schulbesuch"
@@ -789,14 +791,6 @@ label define work_lab 0 "[0] Nein" 1 "[1] Ja"
 label values work work_lab
 tab plb0022_v11 work, m	
 
- * ----- Employed in paid work -----
-gen paid_work = .
-replace paid_work = 1 if inlist(plb0022_v11,1,2,3,4,5,7,10,11)
-replace paid_work = 0 if inlist(plb0022_v11,9)
-replace paid_work = 0 if plc0013_v2 == 0 & plc0014_v2 == 0
-label var paid_work "Employed in paid work"
-tab work paid_work
-
  * ---------- Dummy für Vollzeit ----------
 
 gen vollzeit = .
@@ -821,7 +815,64 @@ label define selfem_lab 0 "Nein" 1 "Ja"
 label var selfem "Selbständige"
 label values selfem selfem_lab
 
+ * ---------- Wage (Month) ----------
+
+* Brutto
+gen work_blohn = plc0013_v2  if plc0013_v2 >= 0 & plc0013_v2 < .
+label var work_blohn "Bruttomonatslohn (letzter Monat)"
+tab work_blohn, m
+
+* Log Bruttoarbeitsverdienst
+
+gen ln_work_blohn = ln(1 + work_blohn) 
+label var ln_work_blohn "Log Bruttomonatslohn (letzter Monat)"
+
+* Netto
+gen work_nlohn = plc0014_v2  if plc0014_v2 >= 0 & plc0014_v2 < .
+label var work_nlohn "Nettomonatslohn (letzter Monat)"
+
+tab work_nlohn, m
+
+* Weniger als 520 Euro:
+gen work_blohn_less520 = work_blohn < 520 if !missing(work_blohn) 
+label var work_blohn_less520 "Bruttomonatslohn < 520 EUR" 
+tab work_blohn work_blohn_less520 if work_blohn < 600, m 
+
+ * ----- Working hours -----
+
+gen work_hours_contract = plb0176_v5 if plb0176_v5 > 0 
+label var work_hours_contract "Vertragliche Wochenarbeitszeit"
+tab work_hours_contract work, m
+
+gen work_hours_actual = plb0186_v3 if plb0186_v3 > 0
+label var work_hours_actual "Tatsächliche Wochenarbeitszeit mit Überstunden"
+tab work_hours_actual work, m
+
+ * ----- Wage (Hour) -----
+
+* Brutto
+gen work_blohn_hour = work_blohn/(work_hours_contract*4.3) if 				 ///
+					  (!missing(work_blohn) & !missing(work_hours_contract)) 
+label var work_blohn_hour "Bruttoarbeitsverdienst pro Stunde (letzter Monat)"
+tab work_blohn_hour, m
+
+* Netto
+gen work_nlohn_hour = work_nlohn/(work_hours_contract*4.3) if 				 ///
+					  (!missing(work_nlohn) & !missing(work_hours_contract)) 
+label var work_nlohn_hour "Nettoarbeitsverdienst pro Stunde (letzter Monat)"
+tab work_nlohn_hour, m
+
+ * ----- Employed in paid work -----
+
+gen paid_work = work
+replace paid_work = 0 if work_blohn == 0
+label var paid_work "Employed in paid work"
+label define paid_work_lab 0 "[0] Nein" 1 "[1] Ja"
+label values paid_work paid_work_lab
+tab work paid_work
+
  * ----- Employed / Not/looking for work -----
+
 gen lfs_status = .
 recode lfs_status .= 1 if paid_work == 1
 recode lfs_status .= 2 if plb0424_v2 == 1
@@ -840,32 +891,40 @@ label values lfs_status lfs_status
  * ----- Employed / Not/looking for work -----
 		* detailed
   
-* in vocational training (Ausbildung) 
-* (plg0012_v2 and plb0022_v11 = 3) or in Kurzarbeit
-  
 gen lfs_status_dtl = .
-recode lfs_status_dtl .= 1 if lfs_status == 1
-recode lfs_status_dtl .= 2 if lfs_status == 2
-recode lfs_status_dtl .= 3 if plg0012_v2 == 1 | inlist(plb0022_v11,3,10)
+recode lfs_status_dtl . = 1 if lfs_status == 1
+recode lfs_status_dtl . = 2 if lfs_status == 2
+recode lfs_status_dtl . = 3 if plg0012_v2 == 1 | inlist(plb0022_v11,3,7,11)
+* In Ausbildung (plg0012_v2 & plb0022_v11 = 3), Sozialem Jahr (plb0022_v11 = 7) 
+* oder Praktikum (plb0022_v11 = 11)
+recode lfs_status_dtl . = 4 if plm736I01 == 1 | plm736I02 == 1 | 			 ///
+							   plm736I03 == 1 | plm728i01I01 == 1 | 		 ///
+							   plm728I02I02 == 1 | plm728I03I03 == 1 | 		 ///
+							   (plj0654 == 1 & plj0659_v1 != 1)
+/* Sprachkursteilnahme: 
+Integrationskurs (plj0654 & plj0659_v1), anderer Sprachkurs (plm736l01, 
+plm736l02, plm736l03), oder Berufsbezogener Sprachkurs (plm728i01l01, 
+plm728i01l02, plm728i01l03)
 
-* Information if still in ESF-BAMF-COURSE (plj0499), Integrationskurs (plj0654 & 
-* plj0659_v1), other German course (plj0540, plm736l01, plm736l02, plm736l03), 
-* or job-related German course (plm728i01l01, plm728i01l02, plm728i01l03)
-
-recode lfs_status_dtl .= 4 if plj0499 == 1 | plj0540 == 1 | plm736I01 == 1 | plm736I02 == 1 | plm736I03 == 1 | plm728i01I01 == 1 | plm728I02I02 == 1 | plm728I03I03 == 1 | (plj0654 == 1 & plj0659_v1 != 1)
-
-* Information if person is in parental leave (plb0019_v2) and
-* if person received parental leave benefit in last month (plc0152_v1, 
-* plc0153_v2)
-
-recode lfs_status_dtl .= 5 if inlist(plb0019_v2,1,2) | plc0152_v1 == 1 | (plc0153_v2 > 0 & plc0153_v2 < .)
-
+ESF-BAMF (plj0499) und anderer Sprachkurs (plj0540) hier nicht enthalten, weil 
+Fragen nur an Wiederbefragte gingen. Für Neubefragte ist diese Teilnahme über
+plj0654 & plj0659_v1 sowie plm736l01, plm736l02, plm736l03 abgedeckt. */
+recode lfs_status_dtl . = 5 if inlist(plb0019_v2,1,2) | plc0152_v1 == 1 | 	 ///
+							  (plc0153_v2 > 0 & plc0153_v2 < .)
+* In Elternzeit/Mutterschutz (plb0019_v2) oder Elterngeld (plc0152_v1, plc0153_v2)
+recode lfs_status_dtl . = 6 if lfs_status == 3 
 * Info from lfs_status if person is currently looking for work 
 
-recode lfs_status_dtl .= 6 if lfs_status == 3 
-
+#delimit
+label define lfs_status_dtl 
+	1 "[1] Erwerbstätig (gegen Entgelt)" 
+	2 "[2] Aktiv arbeitssuchend (letzte 4 Wochen)" 
+	3 "[3] Nicht-aktiv arbeitssuchend: Bildungserwerb" 
+	4 "[4] Nicht-aktiv arbeitssuchend: Spracherwerb" 
+	5 "[5] Nicht-aktiv arbeitssuchend: Elternzeit" 
+	6 "[6] Nicht-aktiv arbeitssuchend: Sonstiges", replace;
+#delimit cr
 label var lfs_status_dtl "Arbeitsmarktstatus, 6 cat."
-label define lfs_status_dtl 1 "[1] Erwerbstätig (gegen Entgelt)" 2 "[2] Aktiv arbeitssuchend (letzte 4 Wochen)" 3 "[3] Nicht-aktiv arbeitssuchend: Bildungserwerb" 4 "[4] Nicht-aktiv arbeitssuchend: Spracherwerb" 5 "[5] Nicht-aktiv arbeitssuchend: Elternzeit" 6 "[6] Nicht-aktiv arbeitssuchend: Sonstiges", replace
 label values lfs_status_dtl lfs_status_dtl
 
 tab lfs_status_dtl lfs_status
@@ -887,37 +946,50 @@ label define job_search_lab 0 "Nein" 1 "Ja"
 label var job_search "aktiv Arbeitssuchend"
 label values job_search job_search_lab
 
+ * ----- Stellensuche erster Job -----
+
+rename lr2100 search_first_job
+rename lr2101 search_first_job2
+
   * --------------------------------------
-    * VARIABLES:
    * SES, LABOR MARKET BEFORE ARRIVAL 
   * --------------------------------------
 
-* OWN RELATIVE POSITION BEFORE ARRIVAL
+ * ----- OWN RELATIVE POSITION BEFORE ARRIVAL -----
 
   * ----- Economic status before migration -----
 
 gen ec_status0 = lr3046 if lr3046 > 0 & lr3046<.
 
-label var ec_status0 "Wirtschaftliche Situation vor Zuzug"
 #delimit
-	label define soz_status0_lab 
+label define ec_status0_lab 
+	1 "[1] Weit überdurchschnittlich" 
+	2 "[2] Eher überdurchschnittlich" 
+	3 "[3] Durchschnittlich" 
+	4 "[4] Eher unterdurchschnittlich" 
+	5 "[5] Weit unterdurchschnittlich" 
+	, modify;
+#delimit cr
+label var ec_status0 "Wirtschaftliche Situation vor Zuzug"
+label values ec_status0 ec_status0_lab
+
+ * ----- Income status before migration -----
+
+gen inc_status0 = lr3041 if lr3041 > 0 & lr3041 < .
+recode inc_status0 . = 0 if lr3032 == 1
+
+#delimit
+label define inc_status0_lab 
 	1 "[1] Weit überdurchschnittlich" 
 	2 "[2] Eher überdurchschnittlich" 
 	3 "[3] Durchschnittlich" 
 	4 "[4] Eher unterdurchschnittlich" 
 	5 "[5] Weit unterdurchschnittlich" 
 	0 "[0] Noch nie Berufstätig"
-	, modify;
+, modify;
 #delimit cr
-label values ec_status0 soz_status0_lab
-
- * ----- Income status before migration -----
-
-gen inc_status0 = lr3041 if lr3041 > 0 & lr3041<.
-recode inc_status0 . = 0 if lr3032 == 1 | lr3033_v1 == 1 
-
 label var inc_status0 "Höhe Ihres Nettoeinkommens vor Zuzug"
-label values inc_status0 soz_status0_lab
+label values inc_status0 inc_status0_lab
 
 tab inc_status0, m 
 tab ec_status0,m
@@ -925,7 +997,7 @@ tab ec_status0,m
  * ----- EMPLOYMENT BEFORE ARRIVAL -----
 
 gen empl0 = lm0632 if lm0632 > 0 & lm0632 < .
-recode empl0 . = 0 if lr3032 == 1 | lr3033_v1 == 1 
+recode empl0 . = 0 if lr3032 == 1
 
 #delimit;
  label define empl0_lab
@@ -952,7 +1024,7 @@ label values empl0 empl0_lab
 		(6 7 = 4 "Beamte") 
 		, gen(empl0_aggr);
 #delimit cr
-label var empl0_aggr "Employed bef. Migr"
+label var empl0_aggr "Erwerbstätigkeit vor Zuzug nach Deutschland (aggr.)"
 
 tab empl0_aggr
 
@@ -960,7 +1032,7 @@ tab empl0_aggr
 
 gen work0 = empl0 > 0 if empl0 < .
 
-label var work0 "Employed bef. Migr"
+label var work0 "Erwerbstätigkeit vor Zuzug nach Deutschland (Dummy)"
 label define work0_lab 0 "[0] Nein" 1 "[1] Ja"
 label values work0 work0_lab
 
@@ -1091,7 +1163,6 @@ recode branch0 ///
 #delimit cr 
 
 label values sektor0_aggr2 sektor0_aggr2_lab
-
 label var sektor0_aggr2 "Aggr2: Vor Zuzug, Volkswirtschaftlichen Gesamtrechnungen (grobes SNA/ISIC-Aggregat A*10/11)"
 
 tab sektor0_aggr2
@@ -1104,7 +1175,8 @@ tab branch0 sektor0_aggr2
 * SPELLS KOMMEN NOCH 
 
   * ----- LEVEL OF QUALIFICATION/JOB
-			* (TÄTIGKEITSNIVEAU) -----
+  
+  * ----- (TÄTIGKEITSNIVEAU) -----
 
 tab l_isco08_job09, m
 tab l_kldb2010_job09, m
@@ -1184,7 +1256,7 @@ destring helpvar0, replace
 
 drop helpvar0
 tab niveau0 if work0 == 1, m
-lab var niveau0 "Anforderungsniveau (KLDB) vor zuzug"
+lab var niveau0 "Anforderungsniveau (KLDB) vor Zuzug"
 
   * ---------------------------------------------
     * VARIABLES: SES, LABOR MARKET AFTER ARRIVAL
@@ -1193,7 +1265,7 @@ lab var niveau0 "Anforderungsniveau (KLDB) vor zuzug"
  * ----- WORK ASPIRATION -----
 
 gen future_empl = plb0417_v2 if plb0417_v2 > 0 & plb0417_v2 < . 
-replace future_empl = 0 if inlist(actual_empl,1,2,3,4,10)
+replace future_empl = 0 if inlist(actual_empl,1,2,3,4,5,10)
 
 #delimit;
 	label define future_empl_lab
@@ -1204,17 +1276,34 @@ replace future_empl = 0 if inlist(actual_empl,1,2,3,4,10)
 		4 "[4] Ganz sicher"
 		, replace;
 #delimit cr
-label var future_empl "Aspiration about Future Employment"
+label var future_empl "Erwerbsabsichten"
 label values future_empl future_empl_lab 
 
 tab future_empl, m
 tab actual_empl future_empl
 tab plb0417_v2 future_empl
 
+recode future_empl (0=.) (1=1) (2=2) (3=3) (4=4), gen(future_empl1)
+#delimit
+	lab define future_empl_lab
+	1 "[1] Nein, ganz sicher nicht" 
+	2 "[2] eher unwahrscheinlich" 
+	3 "[3] Wahrscheinlich" 
+	4 "[4]Ganz sicher"
+	, replace;
+#delimit cr
+label var future_empl1 "Erwerbsaspirationen (nicht Beschäftigte)"
+lab values future_empl1 future_empl_lab
+
+tab future_empl future_empl1
+
+rename plb0418 timing_future_empl
+rename plb0240 type_future_empl
+
  * ----- DUMMY WORK ASPIRATION -----
 
 recode future_empl (0 = .) (1 2 = 0) (3 4 = 1), gen(future_empl_dum)
-label define future_empl_dum_lab 0 "Nein" 1 "Ja"
+label define future_empl_dum_lab 0 "Nein - unwahrscheinlich" 1 "Ja - Wahrscheinlich/ganz sicher"
 label var future_empl_dum "Erwerbsaspiration"
 label values future_empl_dum future_empl_dum_lab
 
@@ -1244,6 +1333,79 @@ label values empl_type empl_type_lab
 tab empl_type work, m
 tab empl_type plb0568_v1
 
+* ISCO OF WORK
+tab p_isco08, nol
+	
+clonevar isco_08 = p_isco08
+recode isco_08 (-100/99 = .)
+tab isco_08 if work == 1, m
+	
+****ISEI SCALE****
+iscogen isei = isei(isco_08)
+label var isei "Job Current: ISEI scale (international socio-economic index)"
+
+iscogen isco_1dig = major(isco_08)
+label var isco_1dig "ISCO curr, 1 digit"
+	
+iscogen isco_oesch5 = oesch5(isco_08)
+tab isco_oesch5
+recode isco_oesch5 (4=3) (5=4)
+
+#delimit;
+	label define isco_oesch5_lab 
+	1 "Berufe mit Hochschulbildung" 
+	2 "Berufe mit höhere Fachausbildung" 
+	3 "Lehrberufe" 
+	4 "An- und Ungelernte"
+	, replace;
+#delimit cr
+label val isco_oesch5 isco_oesch5_lab	
+label var isco_oesch5 "ISCO curr, Oesch 2006a"
+	
+gen isco_skilllev = .
+
+#delimit;
+	label define isco_skilllev 
+	1 "Hilfsarbeitskräfte" 
+	2 "Fachkräfte" 
+	3 "Gehobene Fachkräfte/ Akademische Berufe"
+	, replace;
+#delimit cr
+label val isco_skilllev isco_skilllev
+label var isco_skilllev "ISCO curr, skill level"
+
+replace isco_skilllev = 1 if inlist(isco_1dig,9)
+replace isco_skilllev = 2 if inlist(isco_1dig,4,5,6,7,8)
+replace isco_skilllev = 3 if inlist(isco_1dig,1,2,3)
+
+	
+**** KILDB ****
+tab p_kldb2010
+recode p_kldb2010 (-100/99 = .)
+
+gen p_kldb2010_help = p_kldb2010 if p_kldb2010>0
+clonevar kldb = p_kldb2010
+recode kldb (-100/0 = .) (.b .c = .)
+tab kldb if work == 1, m
+
+tostring kldb, gen(helpvar)
+replace helpvar = substr(helpvar,-1,.) 
+destring helpvar, replace
+
+#delimit
+	recode helpvar
+		(1 = 1 "Helfer")
+		(2 = 2 "Fachkraft")
+		(3 = 3 "Spezialist")
+		(4 = 4 "Experte")
+		, gen(niveau)
+		;
+#delimit cr
+
+drop helpvar
+tab niveau if work == 1, m
+label var niveau "Anforderungsniveau (KLDB)"
+
   * -----------------------------------
     * FURTHER WORK RELATED VARIABLES
   *  ----------------------------------
@@ -1264,6 +1426,20 @@ label values work_befrist work_befrist_lab
 
 tab work_befrist work, m
 tab plb0037_v3 work_befrist
+
+* ---- Arbeitslos gemeldet -----
+ 
+gen arbeitslos = plb0021 if plb0021 == 1
+replace arbeitslos = 0 if plb0021 == 2
+ 
+label define arbeitslos_lab 0 "Nein" 1 "Ja"
+label var arbeitslos "Arbeitslos gemeldet"
+label values arbeitslos arbeitslos_lab
+ 
+ * ----- Leistungsbezug -----
+ 
+ clonevar hh_leistungen = hlc0064_v3
+ clonevar hh_leistungen_hoehe = hlc0065_v2
 
  * --- Currently in Mini-job or BA course (Maßnahme) ---
 
@@ -1300,46 +1476,6 @@ drop help_an*
 label define abschl_anerkenn_lab 0 "[0] Nein" 1 "[1] Ja"
 label var abschl_anerkenn "Anerkennung eines Abschlusses beantragt"
 label values abschl_anerkenn abschl_anerkenn_lab 
-
- * ----- Wage (Month) -----
-
- *Brutto
-gen work_blohn = plc0013_v2  if plc0013_v2 >= 0 & plc0013_v2 < .
-label var work_blohn "Bruttoarbeitsverdienst (letzter Monat)"
-
-tab work_blohn, m
-
- *Netto
-gen work_nlohn = plc0014_v2  if plc0014_v2 >= 0 & plc0014_v2 < .
-label var work_nlohn "Nettoarbeitsverdienst (letzter Monat)"
-
-tab work_nlohn, m
-
- * ----- Working hours -----
-
-gen work_hours_contract = plb0176_v5 if plb0176_v5 > 0 
-label var work_hours_contract "Vertragliche Wochenarbeitszeit"
-
-tab work_hours_contract work, m
-
-gen work_hours_actual = plb0186_v3 if plb0186_v3 > 0
-label var work_hours_actual "Tatsächliche Wochenarbeitszeit mit Überstunden"
-
-tab work_hours_actual work, m
-
- * ----- Wage (Hour) -----
-
- *Brutto
-gen work_blohn_hour = work_blohn / work_hours_contract / 4
-label var work_blohn_hour "Bruttoarbeitsverdienst pro Stunde (letzter Monat)"
-
-tab work_blohn_hour, m
-
- *Netto
-gen work_nlohn_hour = work_nlohn / work_hours_contract / 4
-label var work_nlohn_hour "Nettoarbeitsverdienst pro Stunde (letzter Monat)"
-
-tab work_nlohn_hour, m
 
  * ----- Branch (Help variables) -----
 
@@ -1426,12 +1562,6 @@ label values sektor_aggr2 sektor_aggr2_lab
 
 tab sektor_aggr2 work, m 
 tab branch sektor_aggr2 
-
- /* log close
-
-save $out_data/suare_v40_variablen.dta, replace
-
-log using $out_log/suare_v40_variablen.log, append */
 
   * --------------------
     * GERMAN LANGUAGE
@@ -1642,10 +1772,9 @@ tab mnth_s_arvl_cat other_course_part, m
  * ----- Finished course -----
 
 * coded as finished if participated, year of finishing is known, and course is not ongoing  
-gen other_course_fin = 1 if plj0538 >0 & plj0538 < . & plj0540 != 1
+gen other_course_fin = 1 if plm735i01I01 > 0 & plm735i01I01 < . & plm736I01 != 1
 recode  other_course_fin . = 0 if other_course_part == 0
-recode  other_course_fin . = 0 if plj0540 == 1
-replace other_course_fin = 1 if plm735i01I01 > 0 & plm735i01I01 < . 
+recode  other_course_fin . = 0 if plm736I01 == 1
 
 * Rest is missing information
 
@@ -1732,12 +1861,6 @@ label var deu_aggr_num "Anzahl Deutschkurse (teilgenommen)"
 	
 tab deu_aggr_num, m 
 
-log close
-save $out_data/suare_v40_variablen.dta, replace
-
-use $out_data/suare_v40_variablen.dta, clear
-log using $out_log/suare_v40_variablen.log, append
-
   * ------------------------------
     * Duration until first course
   * ------------------------------
@@ -1745,9 +1868,9 @@ log using $out_log/suare_v40_variablen.log, append
  * ----- Help variables -----  
 
 * Anderer Kurs 
-gen helpdate1 = ym(plj0536,plj0537)	
+gen helpdate1 = ym(plm734i01I01,plm734i02I01)	
 format helpdate1 %tm
-gen helpyr1 = plj0536
+gen helpyr1 = plm734i01I01
 tab1 help*
 
 * Integrationskurs
@@ -1979,11 +2102,25 @@ label values partner_vorh partner_vorh_lab
 
 tab partner_vorh plj0629
 
- /* ----- Robustness Checks:
-		Death of relatives ----- */
+ * ----- PARTNER IN HOUSEHOLD -----
 
-tab1 pld0146 pld0160 pld0163 pld0166 
- * all missing
+gen partner_in_hh = partner_vorh == 0 
+replace partner_in_hh = 1 if plj0627_v1 == 1 | plj0630 == 1
+replace partner_in_hh = 2 if plj0627_v1 == 2 | plj0630 == 2	|				 ///
+							 plj0627_v1 == 3 | plj0630 == 3
+replace partner_in_hh = 3 if plj0627_v1 == 4 | plj0630 == 4	|				 ///
+							 plj0627_v1 == 5 | plj0630 == 5
+
+label var partner_in_hh "Partner im Haushalt"
+#delimit
+	label define partner_in_hh_lab 
+		0 "[0] Kein Partner" 
+		1 "[1] Partner im Haushalt" 
+		2 "[2] Partner in Deutschland außerhalb des Haushalts" 
+		3 "[3] Partner im Ausland"
+		, replace;
+#delimit cr
+label values partner_in_hh partner_in_hh_lab
 
  * ----------------------------------------
 
@@ -1998,29 +2135,26 @@ log using $out_log/suare_v40_variablen.log, append
   * --------------------
 
 #delimit
-keep pid hid cid syear n N prev_stichprobe samplehh instrument mode start* end* 
-day_interview intv_year_month actual_empl work paid_work lfs_status 
-lfs_status_dtl lmactivity female age age1st age1stsq age_cat age_cat2 
+keep pid hid cid syear n N prev_stichprobe samplehh instrument mode start* end*
+day_interview intv_year_month female geb_year_mont age age_cat age_cat2 age1st age1stsq partnership
 arrival_yr arrival_mth arrival_date mnth_s_arrival mnth_s_arvl_cat
-edu_asl years_sch0 years_ausbhoch0 total_years_edu0 school_type school_degree 
-qual_type qual_type_deg school_aus_cert beruf_aus_cert schul_abschluss_aus 
-schulbesuch_aus iabschlussa ausbildung_aus no_school
-isceda11a iscedp11a isceda11a_aggr iscedp11a_aggr ec_status0 inc_status0 empl0 
-empl0_aggr work0 branch0 branch0_vgr sektor0_aggr2 l_isco08_job09 
-l_kldb2010_job09 actual_empl work future_empl empl_type work_befrist 
-work_maßnahm work_blohn work_nlohn work_hours_contract work_hours_actual 
-work_blohn_hour work_nlohn_hour branch branch_vgr sektor_aggr
-speak_german write_german read_german german_score speak_english write_english 
-read_english english_score int_bamf_part int_bamf_finished int_bamf_curr 
-other_course_part other_course_fin other_course_aktl deu_aggr_part 
-deu_aggr_finished deu_aggr_num mths_kursstart yrs_kursstart children h_child_hh 
-hchild_N youngest_child h_child_age h_child_age_0_2 h_child_age_3_6 
-h_child_age_7_17 partnr partner_vorh partnership forever_de_v40 bula
-p_isco08 isco_1dig isco_oesch5 isco_skilllev p_kldb2010 kldb niveau
-isco0_08 isco0_1dig isco0_oesch5 isco0_skilllev kldb0 niveau0 arbeitslos
-timing_empl type_empl hh_leistungen hh_leistungen_hoehe
-hilfe_anerkennung abschl_anerkenn phrf23vorab_SUARE job_search
-settle_intent kohorte vollzeit geringf selfem job_search;
+forever_de_v40 settle_intent kohorte bula east_g west_g healthy health1
+edu_asl years_sch0 total_years_edu0 school_type school_degree schul_abschluss_aus schulbesuch_aus no_school
+qual_type qual_type_deg years_ausbhoch0 school_aus_cert beruf_aus_cert iabschlussa ausbildung_aus
+isceda11a iscedp11a isceda11a_aggr iscedp11a_aggr hilfe_anerkennung abschl_anerkenn 
+actual_empl work paid_work empl_type lfs_status lfs_status_dtl lmactivity vollzeit geringf selfem work_befrist 
+arbeitslos hh_leistungen timing_empl type_empl hh_leistungen_hoehe work_maßnahm 
+work_blohn ln_work_blohn work_nlohn work_blohn_less520 work_hours_contract work_hours_actual work_blohn_hour work_nlohn_hour
+job_search search_first_job search_first_job2 future_empl future_empl1 timing_future_empl type_future_empl future_empl_dum
+ec_status0 inc_status0 empl0 empl0_aggr work0 branch0 branch0_vgr sektor0_aggr2
+l_isco08_job09 isco0_08 isei0 isco0_1dig isco0_oesch5 isco0_skilllev l_kldb2010_job09 kldb0 niveau0 
+p_isco08 isco_08 isei isco_1dig isco_oesch5 isco_skilllev p_kldb2010 kldb niveau
+branch branch_vgr sektor_aggr sektor_aggr2
+speak_german write_german read_german german_score speak_english write_english read_english english_score
+int_bamf_part int_bamf_finished int_bamf_curr other_course_part other_course_fin other_course_aktl 
+deu_aggr_part deu_aggr_finished deu_aggr_num date_1stcourse yr_1stcourse lang_course mths_kursstart yrs_kursstart
+children h_child_hh hchild_N youngest_child h_child_age h_child_age_0_2 h_child_age_3_6 h_child_age_7_17 
+partnr partner_vorh partner_in_hh phrf23vorab_SUARE ;
 #delimit cr
 
 ********************************************

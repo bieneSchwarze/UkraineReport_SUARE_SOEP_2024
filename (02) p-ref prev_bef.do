@@ -10,7 +10,7 @@ global out_log "$AVZ/log"
 global out_data "$AVZ/output/"
 global out_temp "$AVZ/temp/"
 
-use $in\Befragungsdaten\Netto_geprueft\soep-core-2023-p-ref.dta, clear
+use $in\Befragungsdaten\geprüft\soep-core-2023-p-ref.dta, clear
 
 qui ds, has(type numeric)
 local vars `r(varlist)'

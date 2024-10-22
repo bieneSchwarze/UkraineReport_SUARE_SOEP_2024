@@ -35,13 +35,13 @@ merge 1:1 pid hid syear using $in\Stichprobendaten\soep-core-2023-pbrutto.dta
 
 tab1 iyear syear
 
-merge 1:1 pid hid using $in\Befragungsdaten\Netto_geprueft\soep-core-2023-ll-ref.dta
+merge 1:1 pid hid using $in\Befragungsdaten\geprüft\soep-core-2023-ll-ref.dta
 	keep if _merge==3
 	drop _merge
 	isid pid syear
 	tab syear iyear
 	
-merge m:1 hid syear using $in\Befragungsdaten\Netto_geprueft\soep-core-2023-hh-ref.dta
+merge m:1 hid syear using $in\Befragungsdaten\geprüft\soep-core-2023-hh-ref.dta
 	keep if _merge==3
 	drop _merge
 
